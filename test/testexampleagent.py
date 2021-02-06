@@ -1,5 +1,5 @@
-from src.PyAgent.gym_torcs import TorcsEnv
-from src.PyAgent.sample_agent import Agent
+from src.PyAgent.gymenv import TorcsEnv
+from src.PyAgent.architecture.agent import Agent
 import numpy as np
 
 vision = False
@@ -32,7 +32,6 @@ for i in range(episode_count):
         action = agent.act(ob, reward, done, vision)
 
         ob, reward, done, _ = env.step(action)
-        print(ob)
         total_reward += reward
 
         step += 1

@@ -55,3 +55,6 @@
     make install
     make datainstall
 
+2. http://xed.ch/h/torcs.html
+
+

@@ -1,15 +1,12 @@
 from numpy.core.fromnumeric import shape
-import gym
 from gym import spaces
 import numpy as np
-# from os import path
-import src.PyAgent.snakeoil3_gym as snakeoil3
 import numpy as np
 import copy
 import collections as col
 import os
-import time
 
+from src.PyAgent.connection.client import Client
 
 class TorcsEnv:
     terminal_judge_start = 500  # Speed limit is applied after this step
@@ -27,16 +24,6 @@ class TorcsEnv:
         self.port = port
         self.initial_run = True
 
-        """
-        # Modify here if you use multiple tracks in the environment
-        self.client = snakeoil3.Client(p=3101, vision=self.vision)  # Open new UDP in vtorcs
-        self.client.MAX_STEPS = np.inf
-
-        client = self.client
-        client.get_servers_input()  # Get the initial input from torcs
-
-        obs = client.S.d  # Get the current full-observation from torcs
-        """
 
         if throttle is False:
             self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,))
@@ -59,27 +46,27 @@ class TorcsEnv:
 
         this_action = self.agent_to_torcs(u)
 
-        action_torcs = client.R.d
+        action_torcs = client.DriverActionDict
 
         action_torcs['steer'] = this_action['steer']  # in [-1, 1]
 
         #  Simple Autnmatic Throttle Control by Snakeoil
         if self.throttle is False:
             target_speed = self.default_speed
-            if client.S.d['speedX'] < target_speed - (client.R.d['steer']*50):
-                client.R.d['accel'] += .01
+            if client.ServerStateDict['speedX'] < target_speed - (client.DriverActionDict['steer']*50):
+                client.DriverActionDict['accel'] += .01
             else:
-                client.R.d['accel'] -= .01
+                client.DriverActionDict['accel'] -= .01
 
-            if client.R.d['accel'] > 0.2:
-                client.R.d['accel'] = 0.2
+            if client.DriverActionDict['accel'] > 0.2:
+                client.DriverActionDict['accel'] = 0.2
 
-            if client.S.d['speedX'] < 10:
-                client.R.d['accel'] += 1/(client.S.d['speedX']+.1)
+            if client.ServerStateDict['speedX'] < 10:
+                client.DriverActionDict['accel'] += 1/(client.ServerStateDict['speedX']+.1)
 
             # Traction Control System
-            if ((client.S.d['wheelSpinVel'][2]+client.S.d['wheelSpinVel'][3]) -
-               (client.S.d['wheelSpinVel'][0]+client.S.d['wheelSpinVel'][1]) > 5):
+            if ((client.ServerStateDict['wheelSpinVel'][2]+client.ServerStateDict['wheelSpinVel'][3]) -
+               (client.ServerStateDict['wheelSpinVel'][0]+client.ServerStateDict['wheelSpinVel'][1]) > 5):
                 action_torcs['accel'] -= .2
         else:
             action_torcs['accel'] = this_action['accel']
@@ -91,29 +78,29 @@ class TorcsEnv:
             #  Automatic Gear Change by Snakeoil is possible
             action_torcs['gear'] = 1
             """
-            if client.S.d['speedX'] > 50:
+            if client.ServerStateDict['speedX'] > 50:
                 action_torcs['gear'] = 2
-            if client.S.d['speedX'] > 80:
+            if client.ServerStateDict['speedX'] > 80:
                 action_torcs['gear'] = 3
-            if client.S.d['speedX'] > 110:
+            if client.ServerStateDict['speedX'] > 110:
                 action_torcs['gear'] = 4
-            if client.S.d['speedX'] > 140:
+            if client.ServerStateDict['speedX'] > 140:
                 action_torcs['gear'] = 5
-            if client.S.d['speedX'] > 170:
+            if client.ServerStateDict['speedX'] > 170:
                 action_torcs['gear'] = 6
             """
 
         # Save the privious full-obs from torcs for the reward calculation
-        obs_pre = copy.deepcopy(client.S.d)
+        obs_pre = copy.deepcopy(client.ServerStateDict)
 
         # One-Step Dynamics Update #################################
         # Apply the Agent's action into torcs
-        client.respond_to_server()
+        client.RespondToServer()
         # Get the response of TORCS
-        client.get_servers_input()
+        client.GetServerInput()
 
         # Get the current full-observation from torcs
-        obs = client.S.d
+        obs = client.ServerStateDict
 
         # Make an obsevation from a raw observation vector from TORCS
         self.observation = self.make_observaton(obs)
@@ -134,25 +121,26 @@ class TorcsEnv:
         if track.min() < 0:  # Episode is terminated if the car is out of track
             reward = - 1
             episode_terminate = True
-            client.R.d['meta'] = True
+            client.DriverActionDict['meta'] = True
 
         if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
             if progress < self.termination_limit_progress:
                 episode_terminate = True
-                client.R.d['meta'] = True
+                client.DriverActionDict['meta'] = True
 
-        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
+        # Episode is terminated if the agent runs backward
+        if np.cos(obs['angle']) < 0:    #type:ignore
             episode_terminate = True
-            client.R.d['meta'] = True
+            client.DriverActionDict['meta'] = True
 
 
-        if client.R.d['meta'] is True: # Send a reset signal
+        if client.DriverActionDict['meta'] is True: # Send a reset signal
             self.initial_run = False
-            client.respond_to_server()
+            client.RespondToServer()
 
         self.time_step += 1
 
-        return self.get_obs(), reward, client.R.d['meta'], {}
+        return self.get_obs(), reward, client.DriverActionDict['meta'], {}
 
     def reset(self, relaunch=False):
         #print("Reset")
@@ -160,8 +148,8 @@ class TorcsEnv:
         self.time_step = 0
 
         if self.initial_reset is not True:
-            self.client.R.d['meta'] = True
-            self.client.respond_to_server()
+            self.client.DriverActionDict['meta'] = True
+            self.client.RespondToServer()
 
             ## TENTATIVE. Restarting TORCS every episode suffers the memory leak bug!
             if relaunch is True:
@@ -169,13 +157,13 @@ class TorcsEnv:
                 print("### TORCS is RELAUNCHED ###")
 
         # Modify here if you use multiple tracks in the environment
-        self.client = snakeoil3.Client(p=self.port, vision=self.vision)  # Open new UDP in vtorcs
-        self.client.maxSteps = 100000
+        self.client = Client(port=self.port, vision=self.vision)  # Open new UDP in vtorcs
+        self.client.steps = 100000
 
         client = self.client
-        client.get_servers_input()  # Get the initial input from torcs
+        client.GetServerInput()  # Get the initial input from torcs
 
-        obs = client.S.d  # Get the current full-observation from torcs
+        obs = client.ServerStateDict  # Get the current full-observation from torcs
         self.observation = self.make_observaton(obs)
 
         self.last_u = None
