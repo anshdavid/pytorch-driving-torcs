@@ -149,6 +149,7 @@ cython_debug/
 
 
 # Project --------------------------------------------------------------------
-Torcs/
-!src/Torcs/.gitkeep
 .vscode
+Torcs
+torcs/README.mod
+src/torcs/README.md

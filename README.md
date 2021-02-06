@@ -1,6 +1,3 @@
-# pytorch-torcs-RL
-
-
-
+# PYTORCH-DRIVING-TORCS
 
 
