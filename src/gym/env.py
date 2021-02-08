@@ -6,9 +6,9 @@ import copy
 import collections as col
 import os
 
-from src.PyAgent.connection.client import Client
+from src.connection.client import Client
 
-class TorcsEnv:
+class TorcsEnv():
     terminal_judge_start = 500  # Speed limit is applied after this step
     termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
     default_speed = 50
@@ -16,8 +16,16 @@ class TorcsEnv:
     initial_reset = True
 
 
-    def __init__(self, port, vision=False, throttle=False, gear_change=False):
-       #print("Init")
+    def __init__(self,
+        epochs: int = 100,
+        steps: int = 50000,
+        debug: bool = False,
+        vision: bool = False,
+        throttle=False,
+        gearChange=False,):
+        # trackname: str = 'unknown',
+        # stage: int = 3):
+
         self.vision = vision
         self.throttle = throttle
         self.gear_change = gear_change
@@ -207,7 +215,7 @@ class TorcsEnv:
         image_vec =  obs_image_vec
         rgb = []
         temp = []
-        # convert size 64x64x3 = 12288 to 64x64=4096 2-D list 
+        # convert size 64x64x3 = 12288 to 64x64=4096 2-D list
         # with rgb values grouped together.
         # Format similar to the observation in openai gym
         for i in range(0,12286,3):
