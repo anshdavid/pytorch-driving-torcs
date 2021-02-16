@@ -74,3 +74,61 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
 
 - complete TorcsEnv implementaion
 - implement PPO / TRPO / DDPG
+
+## [0.2] - 2021-02-15
+
+### Added
+
+- new Torcs_Env
+- new Screengrab using python-mss
+
+### Changed
+
+- Agent
+
+### Fixed
+
+- client connection states
+
+### Removed
+
+- snakeoit client, agent and env
+
+
+<!-- ```shell
+Action          Range       (unit)      Datatype
+Acceleration    [0,+1]                  Double
+Brake           [0,+1]                  Double
+Gear            {-1..0..+6}             Double
+Steer           [-1,+1]                 Double
+Clutch          [-1,+1]                 Double
+```
+
+Availabel sensor observations
+- angle         [-PI,+PI]   rad
+- damage        [0, +inf]
+- distFromStart [0, +inf]
+- distRaced     [0, +inf]
+- rpm           [0, +inf]
+- speedX        [-inf,+inf]
+- speedY        [-inf,+inf]
+- track         19*[0,200]
+- trackPos      [-1,+1]
+- wheelSpinVel  4*[0,+inf] -->
+
+<!-- - curLapTime    [0, +inf]   secs
+- fuel          [0, +inf]
+- gear          {-1,0 - 6}
+- lastLapTime   [0, +inf]
+- racePos       {1 - N}
+- speedZ        [-inf,+inf]
+- opponents
+- z
+- focus
+- x
+- y
+- roll
+- pitch
+- yaw
+- speedGlobalX
+- speedGlobalY. -->

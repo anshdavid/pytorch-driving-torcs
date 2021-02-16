@@ -38,7 +38,7 @@
 
     prefix=/usr
     BINDIR=${prefix}/games
-    LIBDIR=${prefix}/lib/x86_64-linux-gnu/torcs
+    LIBDIR=${prefix}/lib/x86_64-linux-gnu/torc
     DATAROOTDIR=${prefix}/share
     DATADIR=$DATAROOTDIR/games/torcs
     VARDIR=/var/games/torcs
@@ -56,5 +56,8 @@
     make datainstall
 
 2. http://xed.ch/h/torcs.html
+
+<!-- https://github.com/YurongYou/rlTORCS -->
+<!-- https://github.com/A-Raafat/Torcs---Reinforcement-Learning-using-Q-Learning -->
 
 
