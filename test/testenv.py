@@ -15,7 +15,7 @@ else:
     exit()
 
 steps = instanceEnv.steps
-while steps > 10:
+while True:
     observation, reward, done, _ = instanceEnv.step(instanceAgent.SampleAction())
     steps -= 1
 

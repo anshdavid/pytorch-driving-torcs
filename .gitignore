@@ -153,3 +153,5 @@ cython_debug/
 Torcs
 torcs/README.mod
 src/torcs/README.md
+test/
+**/*.ipynb

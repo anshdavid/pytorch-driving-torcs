@@ -95,13 +95,15 @@ class TorcsEnv(Client):
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
 
+        obs, retCode = self.RecvFromSever()
+
         if not self.SendToServer(action):
             logger.warning(f"unable to send action to server")
             return (None, 0., False, None)
 
-        obs, retR2S = self.RecvFromSever()
+        obs, retCode = self.RecvFromSever()
 
-        if retR2S == 1:
+        if retCode == 1:
             return (obs, 1., True, None)
         else:
             return (obs, 0., False, None)

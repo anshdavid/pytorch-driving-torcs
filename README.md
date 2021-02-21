@@ -9,6 +9,7 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
 
 
 ## Directory Structure
+
     .
     ├── config
     │   ├── default.xml
@@ -38,61 +39,23 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
     │   │   ├── backupenv.py
     │   │   └── env.py
     │   ├── logger.py
-    │   ├── screengrabtest.py
-    │   └── torcs
-    │       └── README.md
+    │   ├── torcs
+    │   │   └── README.md
+    │   └── vision
+    │       └── screengrab.py
     ├── test
-    │   ├── testconnection.py
-    │   └── testexampleagent.py
+    │   ├── lifo.py
+    │   ├── testclient.py
+    │   ├── testenv.py
+    │   └── testgrab.py
+    ├── CHANGELOG.md
     ├── license
     ├── README.md
     ├── test.py
     └── train.py
 
+
 <!-- tree . -l 10 -I '.vscode|omnet|samples|__pycache__|__init__.py|*.pyc|Torcs' -->
-
-
-
-# Changelog
-
-## [0.1] - 2021-02-07
-
-### Added
-
-- new client server connection
-- new Gym environment TorcsEnv
-
-### Changed
-
-- gym_torcs env
-
-### Removed
-
-- Snakeoil client implementation
-
-### TODO
-
-- complete TorcsEnv implementaion
-- implement PPO / TRPO / DDPG
-
-## [0.2] - 2021-02-15
-
-### Added
-
-- new Torcs_Env
-- new Screengrab using python-mss
-
-### Changed
-
-- Agent
-
-### Fixed
-
-- client connection states
-
-### Removed
-
-- snakeoit client, agent and env
 
 
 <!-- ```shell
