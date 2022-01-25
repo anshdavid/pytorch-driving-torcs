@@ -1,4 +1,3 @@
-from typing import Set
 from src.gym.env import TorcsEnv
 from src.architecture.agent import Agent
 import json
@@ -12,12 +11,14 @@ if instanceEnv.InitStage():
     print(f"starting round ...")
 else:
     print(f"unable to initialize round")
-    exit()
 
 steps = instanceEnv.steps
-while True:
-    observation, reward, done, _ = instanceEnv.step(instanceAgent.SampleAction())
+while steps:
+    observation, reward, done, _ = instanceEnv.step(
+        instanceAgent.SampleAction()
+    )
+    print(json.dumps(observation, indent=2))
     steps -= 1
 
 print(f"ending round ...")
-instanceEnv.reset()
+instanceEnv.restart()

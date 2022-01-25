@@ -2,6 +2,7 @@ import logging
 from typing import DefaultDict, Dict, Optional, Set, Tuple, Union
 
 import numpy as np
+import math
 from src.connection.client import Client
 from src.logger import logger
 
@@ -9,37 +10,53 @@ from gym import spaces
 from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
+
+
 class TorcsEnv(Client):
 
-    sensorAngle_: str = "-45 -19 -12 -7 -4 -2.5 -1.7 -1 -.5 0 .5 1 1.7 2.5 4 7 12 19 45"
-    # observation_dict_: Dict[str, spaces.Box] = {
-    #     "angle",
-    #     "damage",
-    #     "distFromStart",
-    #     "distRaced",
-    #     "gear",
-    #     "rpm",
-    #     "speedX",
-    #     "speedY",
-    #     "speedZ",
-    #     "track",
-    #     "trackPos",
-    #     "wheelSpinVel",
-    #     "yaw",
-    #     }
+    sensorAngle_: str = (
+        "-45 -19 -12 -7 -4 -2.5 -1.7 -1 -.5 0 .5 1 1.7 2.5 4 7 12 19 45"
+    )
+
+    observation_dict_: Dict[str, spaces.Box] = {
+        "angle": spaces.Box(
+            low=-math.pi, high=math.pi, shape=(1,), dtype=np.float16
+        ),
+        "damage": spaces.Box(low=0, high=np.inf, shape=(1,), dtype=np.float16),
+        # "distFromStart": spaces.Box(
+        #     low=0, high=np.inf, shape=(1,), dtype=np.float16
+        # ),
+        "distRaced": spaces.Box(
+            low=0, high=np.inf, shape=(1,), dtype=np.float16
+        ),
+        "gear": spaces.Box(low=-1, high=6, shape=(1,), dtype=np.int),
+        "rpm": spaces.Box(low=0, high=math.inf, shape=(1,), dtype=np.float16),
+        # "fuel": spaces.Box(low=0, high=math.inf, shape=(1,), dtype=np.float16),
+        "speedX": spaces.Box(
+            low=math.inf, high=math.inf, shape=(1,), dtype=np.float16
+        ),
+        "speedY": spaces.Box(
+            low=math.inf, high=math.inf, shape=(1,), dtype=np.float16
+        ),
+        "track": spaces.Box(low=0, high=1, shape=(1,), dtype=np.float16),
+        "trackPos": spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float16),
+        "wheelSpinVel": spaces.Box(
+            low=0, high=math.inf, shape=(4,), dtype=np.float16
+        ),
+    }
 
     action_dict_: Dict[str, spaces.Box] = {
-        'accel': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float16),
-        'brake': spaces.Box(low=0, high=1, shape=(1,), dtype=np.float16),
-        'steer': spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float16),
-        }
+        "accel": spaces.Box(low=0, high=1, shape=(1,), dtype=np.float16),
+        "brake": spaces.Box(low=0, high=1, shape=(1,), dtype=np.float16),
+        "steer": spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float16),
+    }
 
-
-    def __init__(self,
-        sensorAngle = sensorAngle_,
-        host: str = 'localhost',
+    def __init__(
+        self,
+        sensorAngle=sensorAngle_,
+        host: str = "localhost",
         port: int = 3001,
-        sid: str = 'SCR',
+        sid: str = "SCR",
         timeout: int = 5,
         delay: int = 2,
         retry: int = 3,
@@ -48,22 +65,30 @@ class TorcsEnv(Client):
         debug: bool = False,
         vision: bool = False,
         gear: bool = True,
-        ):
+    ):
 
         self.epoch = epoch
         self.steps = steps
         self.debug = debug
+
         self.vision = vision
         self.gear = gear
         self.prevobs = None
 
-        super().__init__(sensorAngle=sensorAngle, host=host, port=port,
-            sid=sid, timeout=timeout, delay=delay, retry=retry, debug=debug)
+        super().__init__(
+            sensorAngle=sensorAngle,
+            host=host,
+            port=port,
+            sid=sid,
+            timeout=timeout,
+            delay=delay,
+            retry=retry,
+            debug=debug,
+        )
 
         if not self.CreateConnection():
             logger.error(f"unable to create connection")
             return False
-
 
     def InitStage(self) -> bool:
 
@@ -75,15 +100,25 @@ class TorcsEnv(Client):
         if ret == 0:
             return True
         else:
+            logger.error(f"no response from server")
             return False
 
-
-    def _Restart(self):
+    def Restart(self):
         pass
 
+    def FilterObservations(self, observations: Dict):
+        return dict(
+            filter(
+                lambda kv: kv[0] in self.observation_dict_, observations.items()
+            )
+        )
 
-    def step(self, action: OrderedDict) -> \
-        Tuple[Optional[Union[Dict, DefaultDict]], float, bool, Optional[Dict]]:
+    def Reward(self, observations: Union[Dict, DefaultDict]):
+        pass
+
+    def step(
+        self, action: OrderedDict
+    ) -> Tuple[Union[Dict, DefaultDict], float, bool, Optional[Dict]]:
         """
         Args:
             action (object): an action provided by the agent
@@ -95,50 +130,52 @@ class TorcsEnv(Client):
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
 
-        obs, retCode = self.RecvFromSever()
+        self.prevobs, retCode = self.RecvFromSever()
 
         if not self.SendToServer(action):
             logger.warning(f"unable to send action to server")
-            return (None, 0., False, None)
+            return (dict(), 0.0, False, None)
 
         obs, retCode = self.RecvFromSever()
 
         if retCode == 1:
-            return (obs, 1., True, None)
+            return (self.FilterObservations(obs), 1.0, False, None)
         else:
-            return (obs, 0., False, None)
+            return (self.FilterObservations(obs), 0.0, True, None)
 
+    def restart(self) -> bool:
+        """
+        restart current stage
 
-    def reset(self) -> bool:
+        Returns:
+            bool: True is successful
+        """
 
-        self.ClientReset()
+        self.ServerRestart()
 
-        _, flag = self.RecvFromSever()
-        if flag == -3:
-            logger.info(f"reset environment on port {self.port}")
+        if self.RecvFromSever()[1] == -3:
+            logger.info(f"restart environment on port {self.port}")
             return True
         return False
 
+    def reset(self) -> bool:
+        return True
 
     def render(self):
         pass
 
-
     def close(self):
-        logger.info(f"teardonw environment !")
+        logger.info(f"teardown environment !")
         self.ClientShutdown()
-
 
     def seed(self):
         pass
-
 
     # terminal_judge_start = 500  # Speed limit is applied after this step
     # termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
     # default_speed = 50
 
     # initial_reset = True
-
 
     # def __init__(self,
     #     epochs: int = 100,
@@ -155,7 +192,6 @@ class TorcsEnv(Client):
     #     self.gear_change = gear_change
     #     self.port = port
     #     self.initial_run = True
-
 
     #     if throttle is False:
     #         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,))
@@ -265,7 +301,6 @@ class TorcsEnv(Client):
     #         episode_terminate = True
     #         client.DriverActionDict['meta'] = True
 
-
     #     if client.DriverActionDict['meta'] is True: # Send a reset signal
     #         self.initial_run = False
     #         client.RespondToServer()
@@ -332,7 +367,6 @@ class TorcsEnv(Client):
     #         torcs_action.update({'gear': u[2]})
 
     #     return torcs_action
-
 
     # def obs_vision_to_image_rgb(self, obs_image_vec):
     #     print(f"image shape - {shape(obs_image_vec)}")

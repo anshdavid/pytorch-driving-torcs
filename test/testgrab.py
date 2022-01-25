@@ -2,7 +2,7 @@ from src.vision.screengrab import ScreenGrab
 import time
 import cv2
 
-instanceGrab =  ScreenGrab()
+instanceGrab = ScreenGrab()
 
 while True:
 

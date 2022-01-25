@@ -36,7 +36,6 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
     │   │   ├── client.py
     │   │   └── README.md
     │   ├── gym
-    │   │   ├── backupenv.py
     │   │   └── env.py
     │   ├── logger.py
     │   ├── torcs
@@ -44,11 +43,10 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
     │   └── vision
     │       └── screengrab.py
     ├── test
-    │   ├── lifo.py
     │   ├── testclient.py
     │   ├── testenv.py
     │   └── testgrab.py
-    ├── CHANGELOG.md
+    ├── CHANGELOG
     ├── license
     ├── README.md
     ├── test.py
@@ -58,40 +56,127 @@ Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch]
 <!-- tree . -l 10 -I '.vscode|omnet|samples|__pycache__|__init__.py|*.pyc|Torcs' -->
 
 
-<!-- ```shell
-Action          Range       (unit)      Datatype
-Acceleration    [0,+1]                  Double
-Brake           [0,+1]                  Double
-Gear            {-1..0..+6}             Double
-Steer           [-1,+1]                 Double
-Clutch          [-1,+1]                 Double
-```
+    Action          Range           (unit)      Datatype
 
-Availabel sensor observations
-- angle         [-PI,+PI]   rad
-- damage        [0, +inf]
-- distFromStart [0, +inf]
-- distRaced     [0, +inf]
-- rpm           [0, +inf]
-- speedX        [-inf,+inf]
-- speedY        [-inf,+inf]
-- track         19*[0,200]
-- trackPos      [-1,+1]
-- wheelSpinVel  4*[0,+inf] -->
+    accel           [0,+1]                  Double
+    brake           [0,+1]                  Double
+    steer           [-1,+1]                 Double
 
-<!-- - curLapTime    [0, +inf]   secs
-- fuel          [0, +inf]
-- gear          {-1,0 - 6}
-- lastLapTime   [0, +inf]
-- racePos       {1 - N}
-- speedZ        [-inf,+inf]
-- opponents
-- z
-- focus
-- x
-- y
-- roll
-- pitch
-- yaw
-- speedGlobalX
-- speedGlobalY. -->
+    Observations     Range          (unit)      Datatype
+
+    angle           [-PI,+PI]   rad         Double
+    damage          [0, +inf]               Double
+    distFromStart   [0, +inf]               Double
+    distRaced       [0, +inf]               Double
+    gear            {-1..0..+6}             Integer
+    rpm             [0, +inf]               Double
+    speedX          [-inf,+inf]             Double
+    speedY          [-inf,+inf]             Double
+    track           19*[0,200]              Double
+    trackPos        [-1,+1]                 Double
+    wheelSpinVel    4*[0,+inf]  (rad/s)     Double
+
+
+<!-- 
+accel           [0,+1]                  Double
+brake           [0,+1]                  Double
+steer           [-1,+1]                 Double
+gear            {-1..0..+6}             Integer
+clutch          [-1,+1]                 Double -->
+
+<!-- { SAMPLE
+"angle": 0.000920947,
+"curLapTime": 41.026,
+"damage": 0.0,
+"distFromStart": 1662.0,
+"distRaced": 1.05664,
+"fuel": 94.0,
+"gear": 1.0,
+"lastLapTime": 0.0,
+"opponents": [
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0,
+    200.0
+],
+"racePos": 1.0,
+"rpm": 942.478,
+"speedX": 0.771931,
+"speedY": -0.0193664,
+"speedZ": -0.00287922,
+"track": [
+    7.07843,
+    15.4008,
+    24.1562,
+    41.3426,
+    72.6431,
+    129.035,
+    126.461,
+    124.001,
+    122.099,
+    120.048,
+    117.814,
+    115.34,
+    111.27,
+    104.713,
+    70.7378,
+    40.7174,
+    23.9421,
+    15.315,
+    7.06373
+],
+"trackPos": -0.00011816,
+"wheelSpinVel": [
+    1.22379,
+    -0.445772,
+    -0.258325,
+    3.88605
+],
+"z": 0.350954,
+"focus": [
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0
+],
+"x": 251.057,
+"y": 19.9995,
+"roll": 4.97566e-06,
+"pitch": 0.00846777,
+"yaw": -0.000921725,
+"speedGlobalX": 0.21442,
+"speedGlobalY": -0.00557927
+} -->

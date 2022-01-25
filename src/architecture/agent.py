@@ -3,15 +3,8 @@ import numpy as np
 from gym import spaces
 from collections import OrderedDict
 
-# snakeoil
-def clip(v,lo,hi):
-    if v<lo: return lo
-    elif v>hi: return hi
-    else: return v
-
 
 class Agent(object):
-
     def __init__(self, actionDict: Dict[str, spaces.Box]):
         self.actionSpace = spaces.Dict(actionDict)
 
@@ -19,7 +12,6 @@ class Agent(object):
     #     focus, speedX, speedY, speedZ, opponents, rpm, track, wheelSpinVel = ob
     #     # random action
     #     return np.tanh(np.random.randn(self.dim_action))    #type:ignore
-
 
     # def ClipToLimits(self):
     #     # There pretty much is never a reason to send the server
@@ -45,7 +37,6 @@ class Agent(object):
     #         min(self.action['focus'])<-180 or \
     #         max(self.action['focus'])>180:
     #         self.action['focus']= 0
-
 
     def SampleAction(self) -> OrderedDict:
         return self.actionSpace.sample()
