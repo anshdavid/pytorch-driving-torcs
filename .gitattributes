@@ -1,1 +1,2 @@
 resources/torcs/fmirus-torcs.zip filter=lfs diff=lfs merge=lfs -text
+resources/torcs/gerkone-pyTorcs.zip filter=lfs diff=lfs merge=lfs -text

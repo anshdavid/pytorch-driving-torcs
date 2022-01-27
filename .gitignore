@@ -150,8 +150,5 @@ cython_debug/
 
 # Project --------------------------------------------------------------------
 .vscode
-Torcs
-torcs/README.mod
-src/torcs/README.md
 test/
 **/*.ipynb
