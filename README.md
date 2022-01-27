@@ -4,7 +4,7 @@
 WORK IN PROGRESS
 ```
 
-Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch](https://github.com/barisdemirdelen/scr-torcs-1.3.7) and an additional patch to send the current game image to another application via shared memory.
+<!-- Version of [TORCS 1.3.7](https://github.com/fmirus/torcs-1.3.7) with [SCR patch](https://github.com/barisdemirdelen/scr-torcs-1.3.7) and an additional patch to send the current game image to another application via shared memory. -->
 <!-- http://xed.ch/p/snakeoil/ -->
 
 
