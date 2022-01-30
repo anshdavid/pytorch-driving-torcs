@@ -4,6 +4,46 @@ from gym import spaces
 from collections import OrderedDict
 
 
+class DriverAction:
+    def __init__(self):
+        self.actionstr = str()
+        # "d" is for data dictionary.
+        self.d = {
+            "accel": 0.2,
+            "brake": 0,
+            "clutch": 0,
+            "gear": 1,
+            "steer": 0,
+            "focus": [-90, -45, 0, 45, 90],
+            "meta": 0,
+        }
+
+    def clip_to_limits(self):
+        self.d["steer"] = np.clip(self.d["steer"], -1, 1)
+        self.d["brake"] = np.clip(self.d["brake"], 0, 1)
+        self.d["accel"] = np.clip(self.d["accel"], 0, 1)
+        self.d["clutch"] = np.clip(self.d["clutch"], 0, 1)
+        if self.d["gear"] not in [-1, 0, 1, 2, 3, 4, 5, 6]:
+            self.d["gear"] = 0
+        if self.d["meta"] not in [0, 1]:
+            self.d["meta"] = 0
+        if type(self.d["focus"]) is not list or min(self.d["focus"]) < -180 or max(self.d["focus"]) > 180:
+            self.d["focus"] = 0
+
+    def __repr__(self):
+        self.clip_to_limits()
+        out = str()
+        for k in self.d:
+            out += "(" + k + " "
+            v = self.d[k]
+            if not type(v) is list:
+                out += "%.3f" % v
+            else:
+                out += " ".join([str(x) for x in v])
+            out += ")"
+        return out
+
+
 class Agent(object):
     def __init__(self, actionDict: Dict[str, spaces.Box]):
         self.actionSpace = spaces.Dict(actionDict)

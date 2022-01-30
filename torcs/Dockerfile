@@ -1,98 +1,50 @@
 FROM nvidia/cudagl:11.4.0-base
 
-
-ENV DEBIAN_FRONTEND=noninteractive
-
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \
     ${NVIDIA_VISIBLE_DEVICES:-all}
 ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
-LABEL maintainer="ansh1990@gmail.com"
-LABEL version="0.1.0"
-LABEL description="torcs"
+USER root
 
-# basic
-RUN apt-get update && apt-get -y install \
-    sudo \
-    apt-utils \
-    gnupg2 \
-    wget \
-    curl \
-    lsb-release \
-    software-properties-common \
-    build-essential \
-    make \
-    gdb \
-    openssh-server \
-    gdbserver \
-    libnss3-dev \
-    valgrind \
-    libssl-dev \
-    cmake \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
 
+# build stuff
+RUN apt-get update -y && apt-get install -y --no-install-recommends make g++ gdb
 
-# torcs requierments + `c++` + multimedia
-RUN apt-get update && apt-get -y install \
-    autotools-dev \
-    bison \
-    cmake \
-    freeglut3-dev \
-    g++ \
-    g++-multilib \
-    gcc \
-    gcc-multilib \
-    git \
-    lib32z1 \
-    libalut-dev \
-    libboost-all-dev \
-    libbz2-dev \
-    libgl1-mesa-dev \
-    libglib2.0-dev \
-    libglm-dev \
-    libglu1-mesa-dev \
-    libicu-dev \
-    liblz4-dev \
-    libmirclient-dev \
-    libopenal-dev \
-    libpciaccess0 \
-    libplib-dev \
-    libpng-dev \
-    libvorbis-dev \
-    libwayland-dev \
-    libx11-dev \
-    libx11-xcb-dev \
-    libxcb-dri3-0 \
-    libxcb-dri3-dev \
-    libxcb-ewmh-dev \
-    libxcb-keysyms1-dev \
-    libxcb-present0 \
-    libxcb-randr0-dev \
-    libxdamage1 \
-    libxi-dev \
-    libxmu-dev \
-    libxrandr-dev \
-    libxrender-dev \
-    libxxf86vm-dev \
-    libzstd-dev \
-    mesa-common-dev \
-    python3 \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+# torcs dependencies
+RUN apt-get install -y --no-install-recommends libglib2.0-dev libgl1-mesa-dev libglu1-mesa-dev \
+    freeglut3-dev libplib-dev libopenal-dev libalut-dev libxi-dev libxmu-dev libxrender-dev \
+    libxrandr-dev libpng-dev libxxf86vm-dev libvorbis-dev
 
-ARG USER_ID
-ARG GROUP_ID
+RUN rm -rf /var/lib/apt/lists/*
 
 RUN touch ~/.Xauthority
 
-RUN addgroup --gid $GROUP_ID user \
-    && adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user \
-    && adduser user sudo \
-    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# build and install modified torcs
+COPY . torcs/
 
-USER user
+WORKDIR torcs
 
-WORKDIR /home/user/torcs
+RUN sh configure
+ENV CFLAGS="-fPIC -ansi"
+ENV CPPFLAGS=$CFLAGS
+ENV CXXFLAGS=$CFLAGS
+RUN make clean
+RUN make
+RUN make install && make datainstall
+
+# copy custom configure files (remove old stuff first)
+RUN rm -rf /usr/local/share/games/torcs/config
+RUN rm -rf /usr/local/share/games/torcs/drivers
+RUN mkdir -p /root/.torcs/
+RUN cp -R configs/* /usr/local/share/games/torcs
+RUN cp -R configs/* /root/.torcs
+
+# # remove build tools
+# RUN apt-get remove -y make g++
+
+RUN cd .. && rm -rf torcs
+
+CMD ["/bin/bash"]

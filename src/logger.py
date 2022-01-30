@@ -3,4 +3,6 @@
 
 import logging
 import logging.config
-logger = logging.config.fileConfig(fname=r'./config/log.conf')
+
+logging.config.fileConfig(fname=r"./config/log.conf")
+logger = logging.getLogger(__name__)

@@ -1,200 +1,184 @@
-from collections import defaultdict
-import socket
-from typing import DefaultDict, Dict, List, Optional, Tuple, Union
-import time
+# snakeoil extended with vision through shared memory
+# Chris X Edwards <snakeoil@xed.ch>
+# Gianluca Galletti
 
-import logging
+
+import time
+from socket import AF_INET, SO_RCVBUF, SOCK_DGRAM, SOL_SOCKET
+from socket import socket as Socket
+from typing import Dict, List, Optional, Tuple, Union
 
 from src.logger import logger
+from src.utils import (
+    DEFAULT_SENSOR_ANGLES,
+    SERVERCODE_IDENTIFIED,
+    SERVERCODE_NORESPONSE,
+    SERVERCODE_OBSERVATION,
+    SERVERCODE_RESTART,
+    SERVERCODE_SHUTDOWN,
+    SERVERCODE_TIMEOUT,
+    UDP_MSGLEN,
+)
 
-logger = logging.getLogger(__name__)
 
+class ServerState:
+    def __init__(self) -> None:
+        pass
 
-def Destringify(s: Union[int, str, List]):
-
-    if not s:
-        return s
-
-    if type(s) is str:
-        try:
-            return float(s)
-        except ValueError:
-            print("Could not find a value in %s" % s)
+    @staticmethod
+    def Destringify(s: Union[int, str, List]):
+        if not s:
             return s
+        elif type(s) is str:
+            try:
+                return float(s)
+            except ValueError:
+                print(f"Could not find a value in {s}")
+                return s
+        elif type(s) is list:
+            return ServerState.Destringify(s[0]) if len(s) < 2 else [ServerState.Destringify(i) for i in s]
 
-    elif type(s) is list:
-        if len(s) < 2:
-            return Destringify(s[0])
-        else:
-            return [Destringify(i) for i in s]
+    @staticmethod
+    def Serialize(actionDict: Dict) -> str:
+        out = str()
+        for key, value in actionDict.items():
+            out += (
+                f'({key} {"%.3f" % value if type(value) is not list else " ".join([str(x) for x in value])})'
+            )
+        return out
+
+    @staticmethod
+    def Deserialize(serverString: str) -> Dict:
+        out: Dict = {}
+        inString = serverString.strip()[:-1]
+        tokenzied = inString.strip().lstrip("(").rstrip(")").split(")(")
+        for field in tokenzied:
+            ob, *val = field.split(" ")
+            out[ob] = ServerState.Destringify(val)
+        return out
 
 
 class Client:
-
-    DataSize = 2 ** 17
-
     def __init__(
         self,
-        sensorAngle: str,
-        host: str = "localhost",
-        port: int = 3001,
-        sid: str = "SCR",
-        timeout: int = 5,
-        delay: float = 0.5,
-        retry: int = 3,
-        debug: bool = False,
+        host="localhost",
+        port=3001,
+        sid="SCR",
+        sensorAngle: str = DEFAULT_SENSOR_ANGLES,
+        verbose=False,
+        timeout: int = 15,
+        delay: float = 0,
     ):
 
-        self.sensorAngles = sensorAngle
         self.host = host
         self.port = port
         self.sid = sid
-        self.debug = debug
+
+        self.sensorAngles = sensorAngle
+
+        self.verbose = verbose
+
         self.timeout = timeout
         self.delay = delay
-        self.retry = retry
-        self.socket = None
 
-        self.CreateConnection()
+        self._socket: Optional[Socket] = None
 
-    def _Serialize(self, actionDict: Dict) -> str:
+    @property
+    def socket(self) -> Socket:
+        assert self._socket
+        return self._socket
 
-        out = str()
-        for key, value in actionDict.items():
-            out += f"({key} {'%.3f' % value if not type(value) is list else ' '.join([str(x) for x in value])})"
-        return out
-
-    def _Deserialize(self, serverString: str) -> DefaultDict:
-
-        out = DefaultDict()
-        inString = serverString.strip()[:-1]
-        tokenzied = inString.strip().lstrip("(").rstrip(")").split(")(")
-
-        for field in tokenzied:
-            ob, *val = field.split(" ")
-            out[ob] = Destringify(val)
-        return out
-
-    def IsInitialized(self) -> bool:
-        if self.socket is not None:
-            return True
-        return False
+    @socket.setter
+    def socket(self, value: Socket) -> None:
+        self._socket = value
 
     def CreateConnection(self) -> bool:
-
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket = Socket(AF_INET, SOCK_DGRAM)
         except Exception as e:
-            logger.exception(f"{e}")
-            logger.error(f"could not create socket")
+            logger.error(f"could not create socket\n{e}")
             return False
         else:
-            logger.info(f"connection established")
-            return True
+            logger.info("binding socket")
+        finally:
+            # set socket receive buffer to 1 packet to avoid buffer bloat and packet accumulation
+            self.socket.setsockopt(SOL_SOCKET, SO_RCVBUF, UDP_MSGLEN)
+            self.socket.settimeout(self.timeout)
+        return True
 
     def InitSensors(self) -> bool:
-
-        if not self.IsInitialized():
-            logger.error("socket not initialzed !")
-            return False
-
-        initmsg = f"{self.sid}(init {self.sensorAngles})"
-
         try:
-            self.socket.sendto(initmsg.encode(), (self.host, self.port))
+            self.socket.sendto(f"{self.sid}(init {self.sensorAngles})".encode(), (self.host, self.port))
         except Exception as e:
-            logger.exception(f"{e}")
-            logger.error(f"error sending message")
+            logger.error(f"error sending message\n{e}")
             return False
         else:
             logger.info(f"init message sent with sensors {self.sensorAngles}")
-
-        logger.info(
-            f"waiting for response 'InitSensors' to on port: {self.port}"
-        )
+        finally:
+            logger.info(f"waiting for response 'InitSensors' to on port: {self.port}")
         return True
 
-    def RecvFromSever(self) -> Tuple[DefaultDict, int]:
-        """
-        get server string with retcode.
-
-        Returns:
-            observation (DefaultDict): server observation
-            retcode (int): server status
-                -4 -> timeout / unhandled exception
-                -3 -> server restart
-                -2 -> server shutdown
-                -1 -> no response from server
-                0 -> client identified
-                1 -> return observation
-        """
+    def RecvFromSever(self) -> Tuple[Dict, int]:
 
         sockdata: str = ""
-        self.socket.settimeout(self.timeout)
 
         try:
-            sockdata = self.socket.recvfrom(self.DataSize)[0].decode("utf-8")
-            if self.debug:
+            sockdata = self.socket.recvfrom(UDP_MSGLEN)[0].decode("utf-8")
+            if self.verbose:
                 print("\nrecv", sockdata)
         except Exception as e:
             logger.exception(f"{e}")
-            return defaultdict(), -4
+            return dict(), SERVERCODE_TIMEOUT
 
         if "***restart***" in sockdata:
             logger.info(f"server restarted on port: {self.port}")
-            return defaultdict(), -3
+            return dict(), SERVERCODE_RESTART
 
         elif "***shutdown***" in sockdata:
             logger.info(f"server shutdown on port: {self.port}.")
-            return defaultdict(), -2
+            return dict(), SERVERCODE_SHUTDOWN
 
         elif not sockdata:
             logger.warning(f"server no response on port: {self.port}")
-            return defaultdict(), -1
+            return dict(), SERVERCODE_NORESPONSE
 
         elif "***identified***" in sockdata:
             logger.info(f"client identified connected on port: {self.port}")
             # * always delay few secs after starting round maybe ??
-            # * helps with stuff !!
             time.sleep(self.delay)
-            return defaultdict(), 0
-
+            return dict(), SERVERCODE_IDENTIFIED
         else:
-            if self.debug:
+            if self.verbose:
                 logger.info(f"recv: {sockdata}")
-            return self._Deserialize(sockdata), 1
+            return ServerState.Deserialize(sockdata), SERVERCODE_OBSERVATION
+        return True
 
     def SendToServer(self, action: Dict) -> bool:
-
         if self.socket is None:
-            logger.error(f"!! connection closed abrubtly on port: {self.port}")
+            logger.error(f"connection closed abrubtly on port: {self.port}")
             return False
 
         message: str = ""
+
         try:
-            message = self._Serialize(action)
+            message = ServerState.Serialize(action)
             self.socket.sendto(message.encode(), (self.host, self.port))
         except Exception as e:
-            logger.exception(f"{e}")
-            logger.error(f"error sending to server on port {self.port}")
-            if self.debug:
+            logger.error(f"error sending to server on port {self.port}\n{e}")
+            if self.verbose:
                 logger.debug(f"{message}")
             return False
         return True
 
-    def ClientShutdown(self):
-
-        # * always gracefully try to restart before disconnect
-        self.ServerRestart()
-
-        logger.info(f"closing connection ...")
-        self.socket.close()
-        self.socket = None
-        logger.info(f"server connection closed on port: {self.port}")
-        return True
-
     def ServerRestart(self):
         logger.info(f"restart connection on port {self.port}")
-        # action = dict()
-        # action["meta"] = True
         self.SendToServer({"meta": True})
+
+    def ClientShutdown(self):
+        self.ServerRestart()
+
+        logger.info("closing connection ...")
+        self.socket.close()
+
+        logger.info(f"server connection closed on port: {self.port}")
+

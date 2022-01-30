@@ -152,3 +152,12 @@ cython_debug/
 .vscode
 test/
 **/*.ipynb
+src/connection/torcs_client/README.md
+src/connection/torcs_client/reward.py
+src/connection/torcs_client/terminator.py
+src/connection/torcs_client/torcs_client.py
+src/connection/torcs_client/torcs_comp.py
+src/connection/torcs_client/utils.py
+src/connection/torcs_client/reward_dataset/berniw_timemap_gtrack1.h5
+torcs/BUILD/
+reports/video

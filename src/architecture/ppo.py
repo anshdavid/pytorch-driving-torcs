@@ -1,4 +1,4 @@
-import numpy as np
+import numpy
 
 
 class PPOMemory:
@@ -15,18 +15,18 @@ class PPOMemory:
 
     def generate_batches(self):
         n_states = len(self.states)
-        batch_start = np.arange(0, n_states, self.batch_size)
-        indices = np.arange(n_states, dtype=np.int)
-        np.random.shuffle(indices)
+        batch_start = numpy.arange(0, n_states, self.batch_size)
+        indices = numpy.arange(n_states, dtype=numpy.uint)
+        numpy.random.shuffle(indices)
         batches = [indices[i : i + self.batch_size] for i in batch_start]
 
         return (
-            np.array(self.states),
-            np.array(self.actions),
-            np.array(self.probs),
-            np.array(self.vals),
-            np.array(self.rewards),
-            np.array(self.dones),
+            numpy.array(self.states),
+            numpy.array(self.actions),
+            numpy.array(self.probs),
+            numpy.array(self.vals),
+            numpy.array(self.rewards),
+            numpy.array(self.dones),
             batches,
         )
 

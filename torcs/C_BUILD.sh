@@ -4,15 +4,14 @@ CFLAGS="-fPIC -ansi"
 CPPFLAGS=$CFLAGS
 CXXFLAGS=$CFLAGS
 
-./configure --prefix=$(pwd)/BUILD
+TARGETDIR=$(pwd)/BUILD
+./configure --prefix=$TARGETDIR
 
 make clean
 make
 make install
 make datainstall
 
-
-# cp -R /usr/local/share/games/torcs /usr/local/share/games/torcs_backup
 # rm -rf /usr/local/share/games/torcs/config
 # rm -rf /usr/local/share/games/torcs/drivers
 # mkdir -p /root/.torcs/
