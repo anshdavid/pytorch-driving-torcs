@@ -6,7 +6,7 @@ import numpy
 import math
 from src import gym
 from src.connection.client import Client
-from utils import StartContainer, StartTorcs, StopContainer, StopTorcs
+from src.utils import StartContainer, StartTorcs, StopContainer, StopTorcs
 from src.logger import logger
 
 from gym import spaces, Env

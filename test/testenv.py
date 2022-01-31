@@ -32,7 +32,6 @@ with TorcsEnv() as env:
         action = agent.SampleAction()
         action["gear"] = 1
         action["brake"] = 0
-
         env.client.SendToServer(action)
 
     env.client.ServerRestart()

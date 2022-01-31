@@ -81,6 +81,45 @@ ACTION_SPACE: Dict[str, spaces.Box] = {
     "steer": spaces.Box(low=-1, high=1, shape=(1,), dtype=numpy.float16),
 }
 
+TRACKS: Dict[str, List[str]] = {
+    "dirt": ["dirt-1", "dirt-2", "dirt-3", "dirt-4", "dirt-5", "dirt-6", "mixed-1", "mixed-2"],
+    "road": [
+        "alpine-1",
+        "corkscrew",
+        "e-track-3",
+        "g-track-2",
+        "ole-road-1",
+        "street-1",
+        "alpine-2",
+        "e-track-6",
+        "g-track-3",
+        "ruudskogen",
+        "wheel-1",
+        "brondehach",
+        "e-track-2",
+        "forza",
+        "spring",
+        "wheel-2",
+        "aalborg",
+        "e-track-1",
+        "e-track-5",
+        "e-track-1",
+        "e-track-5",
+        "eroad",
+        "e-track-4",
+        "g-track-1",
+    ],
+    "oval": [
+        "a-speedway",
+        "b-speedway",
+        "e-speedway",
+        "g-speedway",
+        "michigan",
+        "c-speedway",
+        "d-speedway",
+        "f-speedway",
+    ],
+}
 
 # docker run -e DISPLAY=unix$DISPLAY -p 3001:3001/udp -v /tmp/.X11-unix:/tmp/.X11-unix:ro -e QT_X11_NO_MITSHM=1 --gpus=0 --shm-size=4g --ipc=host
 # -it --rm -d gerkone/torcs torcs
@@ -96,6 +135,7 @@ def StartContainer(image: str = r"gerkone/torcs", port: int = 3001, timeoutInSec
     )
 
     dockerCMD: List[str] = []
+    pathRaceXML = os.environ["TORCSPROJECT"] + "/configs/config/raceman/practice.xml"
 
     if len(containerID) == 0:
         dockerCMD.extend(
@@ -108,6 +148,8 @@ def StartContainer(image: str = r"gerkone/torcs", port: int = 3001, timeoutInSec
                 f"{port}:{port}/udp",
                 "-v",
                 "/tmp/.X11-unix:/tmp/.X11-unix:ro",
+                "-v",
+                f"{pathRaceXML}:/usr/local/share/games/torcs/config/raceman/practice.xml:ro",
                 "-e",
                 "QT_X11_NO_MITSHM=1",
                 "--gpus=0",
@@ -168,122 +210,11 @@ def StopTorcs(containerID: str):  # sourcery skip: merge-list-extend
     )
 
 
-# def ResetTorcs(container_id, vision, kill=False):
-#     command = []
-#     if kill == True:
-#         kill_torcs(container_id)
-
-#     if container_id != "0":
-#         command.extend(["docker", "exec", container_id])
-#     else:
-#         subprocess.Popen(["rm", "-rf", "/usr/local/share/games/torcs/config"])
-#         subprocess.Popen(
-#             ["cp", "-R", os.path.join(os.getcwd(), "torcs/configs/config"), "/usr/local/share/games/torcs"]
-#         )
-#         subprocess.Popen(
-#             ["cp", os.path.join(os.getcwd(), "torcs/configs/drivers"), "/usr/local/share/games/torcs/"]
-#         )
-
-#     command.extend(["torcs", "-nofuel", "-nodamage", "-nolaptime"])
-
-#     if vision is True:
-#         command.append("-vision")
-
-#     subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
 # def agent_from_module(mod_name, run_path):
 #     spec = importlib.util.spec_from_file_location(mod_name, run_path)
 #     mod = importlib.util.module_from_spec(spec)
 #     spec.loader.exec_module(mod)
 #     return getattr(mod, mod_name)
-
-
-# def start_container(image_name, verbose, ports, privileged):
-#     # check if the container is already up
-#     container_id = subprocess.check_output(
-#         ["docker", "ps", "-q", "--filter", "ancestor=" + image_name]
-#     ).decode("utf-8")
-#     if len(container_id) == 0:
-#         # not yet started
-#         # get display from environment
-#         display = "unix" + os.environ["DISPLAY"]
-#         torcs_config_dir = os.path.join(os.getcwd(), "torcs/configs/config")
-#         scr_config_dir = os.path.join(os.getcwd(), "torcs/configs/drivers/scr_server/scr_server.xml")
-#         scr_car_dir = os.path.join(os.getcwd(), "torcs/configs/drivers/scr_server/0")
-#         if verbose:
-#             SimpleLogger.info("Starting TORCS container...")
-#         docker_command = []
-#         docker_command.extend(
-#             [
-#                 "nvidia-docker",
-#                 "run",
-#                 "--ipc=host",
-#                 "-v",
-#                 "/tmp/.X11-unix:/tmp/.X11-unix:ro",
-#                 "-v",
-#                 "{}:/usr/local/share/games/torcs/config:ro".format(torcs_config_dir),
-#                 "-v",
-#                 "{}:/usr/local/share/games/torcs/drivers/scr_server/scr_server.xml:ro".format(scr_config_dir),
-#                 "-v",
-#                 "{}:/usr/local/share/games/torcs/drivers/scr_server/0:ro".format(scr_car_dir),
-#                 "-e",
-#                 "DISPLAY=" + display,
-#             ]
-#         )
-#         for port in ports:
-#             docker_command.extend(["-p", "{p}:{p}/udp".format(p=port)])
-#         if privileged:
-#             docker_command.append("--privileged")
-#         docker_command.extend(["--rm", "-t", "-d", image_name])
-
-#         subprocess.Popen(docker_command, stdout=subprocess.DEVNULL)
-#         time.sleep(0.5)
-#         while len(container_id) == 0:
-#             time.sleep(0.5)
-#             container_id = subprocess.check_output(
-#                 ["docker", "ps", "-q", "--filter", "ancestor=" + image_name]
-#             ).decode("utf-8")
-#         container_id = re.sub("[^a-zA-Z0-9 -]", "", container_id)
-#         if verbose:
-#             SimpleLogger.info("Container started with id {}".format(container_id))
-#     else:
-#         container_id = re.sub("[^a-zA-Z0-9 -]", "", container_id)
-#         if verbose:
-#             SimpleLogger.info("Container {} already running".format(container_id))
-
-#     return container_id
-
-
-# def reset_torcs(container_id, vision, kill=False):
-#     command = []
-#     if kill == True:
-#         kill_torcs(container_id)
-
-#     if container_id != "0":
-#         command.extend(["docker", "exec", container_id])
-#     else:
-#         subprocess.Popen(["rm", "-rf", "/usr/local/share/games/torcs/config"])
-#         subprocess.Popen(
-#             ["cp", "-R", os.path.join(os.getcwd(), "torcs/configs/config"), "/usr/local/share/games/torcs"]
-#         )
-#         subprocess.Popen(
-#             ["cp", os.path.join(os.getcwd(), "torcs/configs/drivers"), "/usr/local/share/games/torcs/"]
-#         )
-
-#     command.extend(["torcs", "-nofuel", "-nodamage", "-nolaptime"])
-
-#     if vision is True:
-#         command.append("-vision")
-
-#     subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
-# def kill_container(container_id):
-#     command = []
-#     if container_id != "0":
-#         command.extend(["docker", "kill", container_id])
-#     subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 # def change_track(race_type, track, tracks_categories):
@@ -362,14 +293,3 @@ def StopTorcs(containerID: str):  # sourcery skip: merge-list-extend
 #         doc.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
 #         doc.write(etree.tostring(config, pretty_print=True))
 
-
-# def raw_to_rgb(img_buf, img_width, img_height):
-
-#     img = np.array(img_buf.reshape((img_height, img_width, 3)))
-#     img = np.flip(img, axis=0)
-
-#     return img
-
-
-# def resize_frame(img, dest_width, dest_height):
-#     return cv2.resize(img, dsize=(dest_width, dest_height), interpolation=cv2.INTER_CUBIC)

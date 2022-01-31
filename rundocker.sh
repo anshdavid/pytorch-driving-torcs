@@ -38,17 +38,18 @@ fi
 
 run_build
 
-nvidia-docker run --ipc=host
-
-# > export containerId=$(docker ps -l -q)
 
 # ### for the lazy and reckless
 #     xhost +local:root
 #     xhost -local:root
 
 # ###  opening up xhost for specific system
+#     export containerId=$(docker ps -l -q)
 #     xhost +local:`docker inspect --format='{{ .Config.Hostname }}' $containerId`
 
 
-# run gerkone/torcs
-# docker run --gpus 0 -e QT_X11_NO_MITSHM=1 --shm-size=4g --ipc=host -v /tmp/.X11-unix:/tmp/.X11-unix:ro -e DISPLAY=unix$DISPLAY -p 3001:3001/udp -it --rm -d gerkone/torcs torcs
+# running raw
+# docker run --gpus 0 -e QT_X11_NO_MITSHM=1 --shm-size=4g --ipc=host -v /tmp/.X11-unix:/tmp/.X11-unix:ro -e DISPLAY=unix$DISPLAY -p 3001:3001/udp -it --rm -d gerkone/torcs
+
+# running with racexml
+#docker run --gpus=0 -e QT_X11_NO_MITSHM=1 --shm-size=4g --ipc=host -v /tmp/.X11-unix:/tmp/.X11-unix:ro -v /home/wolf/codebase/python/pytorch-driving-torcs/torcs/configs/config/raceman/practice.xml:/usr/local/share/games/torcs/config/raceman/practice.xml:ro -e DISPLAY=unix$DISPLAY -p 3001:3001/udp -it --rm -d gerkone/torcs torcs

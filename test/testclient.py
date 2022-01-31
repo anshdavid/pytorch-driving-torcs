@@ -65,8 +65,10 @@ for step, idx in enumerate(range(500, 0, -1)):
 
         action = instanceAgent.SampleAction()
         action["gear"] = 1
+        action["brake"] = 0
+        action["accel"] = 0.1
 
-        instanceClient.SendToServer(instanceAgent.SampleAction())
+        instanceClient.SendToServer(action)
 
 
 print("END")
