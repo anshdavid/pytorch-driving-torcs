@@ -75,6 +75,8 @@ TORCS.vcproj
 torcs.xpm
 tux.png
 written
+README.md
+TORCS.md
 !.gitignore
 !requirements.txt
 !COPYING
